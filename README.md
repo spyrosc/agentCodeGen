@@ -124,7 +124,6 @@ See [.env.example](.env.example) for the full list. Highlights:
 genAIv2/
 ├── docker-compose.yml          two services: agent + sandbox
 ├── docker/                     Dockerfiles
-├── docs/                       architecture, security, roadmap, how-tos
 ├── scripts/run_cli.py          run any agent without the UI
 ├── src/genai/
 │   ├── core/                   config + logging
@@ -140,8 +139,3 @@ genAIv2/
 └── requirements*.txt
 ```
 
-## Status
-
-This is **v0.1**. Adequate for local development; not hardened for
-multi-tenant deployment. See [docs/SECURITY.md](docs/SECURITY.md) before
-exposing it.
