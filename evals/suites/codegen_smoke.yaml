@@ -1,0 +1,56 @@
+name: codegen_smoke
+description: Smoke tests for the codegen agent. Each case asks for a small Python project and checks structural + functional output.
+
+cases:
+  - id: fizzbuzz_cli
+    agent: codegen
+    timeout_s: 900
+    prompt: |
+      Build a Python CLI named `fizzbuzz` that takes an integer N (default 15) on the
+      command line and prints the FizzBuzz sequence from 1 to N to stdout. Provide a
+      `pytest` test that imports the function producing the sequence and asserts the
+      first 15 outputs are correct. Use a `pyproject.toml`. No external dependencies.
+    expect_files:
+      - pyproject.toml
+      - "**/*.py"
+      - "tests/**/test_*.py"
+    functional:
+      - name: pytest
+        type: pytest
+        required: true
+        timeout_s: 180
+
+  - id: csv_summariser
+    agent: codegen
+    timeout_s: 900
+    prompt: |
+      Build a Python module `csvsum` exposing `summarise(path) -> dict` that reads a
+      CSV file and returns `{"rows": int, "columns": list[str]}`. Include a CLI entry
+      point `python -m csvsum <path>` printing the dict as JSON. Add pytest tests using
+      a tmp_path fixture. Use only the Python standard library.
+    expect_files:
+      - pyproject.toml
+      - "**/csvsum*.py"
+      - "tests/**/test_*.py"
+    functional:
+      - name: pytest
+        type: pytest
+        required: true
+        timeout_s: 180
+
+  - id: http_fetcher
+    agent: codegen
+    timeout_s: 900
+    prompt: |
+      Build a Python module `fetcher` with a function `fetch_status(url, timeout=5) -> int`
+      using only the standard library (`urllib.request`). Add pytest tests that monkey-patch
+      `urllib.request.urlopen` to avoid real network access. Provide a `pyproject.toml`.
+    expect_files:
+      - pyproject.toml
+      - "**/fetcher*.py"
+      - "tests/**/test_*.py"
+    functional:
+      - name: pytest
+        type: pytest
+        required: true
+        timeout_s: 180

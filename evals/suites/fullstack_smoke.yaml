@@ -1,0 +1,206 @@
+name: fullstack_smoke
+description: Smoke tests for the fullstack agent. Each case generates a complete app and checks structural + functional output.
+
+cases:
+  - id: todo_app
+    agent: fullstack
+    timeout_s: 2400
+    prompt: |
+      Build a small "Todos" web app. A user can register, log in, then create / list /
+      mark-done / delete their own todo items. Each todo has a title (string),
+      description (string, optional) and done flag (bool). Backend in FastAPI with JWT
+      auth, frontend in React + Vite + Tailwind, persistence in Postgres.
+    expect_files:
+      - docker-compose.yml
+      - backend/app/main.py
+      - backend/app/models.py
+      - backend/app/routers/auth.py
+      - "backend/alembic/versions/*.py"
+      - frontend/package.json
+      - frontend/src/App.tsx
+    functional:
+      - name: backend_pytest
+        type: pytest
+        cwd: backend
+        required: true
+        timeout_s: 300
+      - name: backend_import
+        type: python_import
+        cwd: backend
+        module: app.main
+        required: true
+        timeout_s: 60
+      - name: frontend_build
+        type: npm_build
+        cwd: frontend
+        required: false
+        timeout_s: 600
+
+  - id: blog_with_auth
+    agent: fullstack
+    timeout_s: 2400
+    prompt: |
+      Build a blogging app. Authenticated users can create, list, view, edit and delete
+      their own posts (title, body markdown, created_at). Anonymous visitors can list
+      and view posts. Backend FastAPI + JWT, frontend React + Vite + Tailwind, Postgres.
+    expect_files:
+      - docker-compose.yml
+      - backend/app/main.py
+      - backend/app/models.py
+      - "backend/alembic/versions/*.py"
+      - frontend/package.json
+      - frontend/src/App.tsx
+    functional:
+      - name: backend_pytest
+        type: pytest
+        cwd: backend
+        required: true
+        timeout_s: 300
+      - name: backend_import
+        type: python_import
+        cwd: backend
+        module: app.main
+        required: true
+        timeout_s: 60
+      - name: frontend_build
+        type: npm_build
+        cwd: frontend
+        required: false
+        timeout_s: 600
+
+  - id: bookmarks_crud
+    agent: fullstack
+    timeout_s: 2400
+    prompt: |
+      Build a tiny "Bookmarks" web app. A user can register, log in, then create / list /
+      delete their own bookmarks. Each Bookmark has: url (string), title (string),
+      tags (comma-separated string, optional). One /bookmarks page with an inline
+      create form and a delete button per row. Keep it minimal but ensure POST and
+      DELETE actually work end-to-end.
+    expect_files:
+      - docker-compose.yml
+      - backend/app/main.py
+      - backend/app/models.py
+      - backend/app/routers/auth.py
+      - "backend/app/routers/bookmark*.py"
+      - "backend/alembic/versions/*.py"
+      - frontend/src/pages/BookmarksPage.tsx
+    functional:
+      - name: backend_pytest
+        type: pytest
+        cwd: backend
+        required: true
+        timeout_s: 300
+      - name: backend_import
+        type: python_import
+        cwd: backend
+        module: app.main
+        required: true
+        timeout_s: 60
+      - name: frontend_build
+        type: npm_build
+        cwd: frontend
+        required: false
+        timeout_s: 600
+
+  - id: snippets_app
+    agent: fullstack
+    timeout_s: 2400
+    prompt: |
+      Build a minimal "Code Snippets" app. A user can register, log in, then create /
+      list / view / delete their own code snippets. Each Snippet has: title (string),
+      language (string, e.g. "python"), body (multi-line string). Snippets are private
+      to the owner. One /snippets page that lists titles + languages with a "view"
+      link that shows the body in a <pre> block, plus an inline create form.
+    expect_files:
+      - docker-compose.yml
+      - backend/app/main.py
+      - backend/app/models.py
+      - "backend/app/routers/snippet*.py"
+      - "backend/alembic/versions/*.py"
+      - frontend/src/pages/SnippetsPage.tsx
+    functional:
+      - name: backend_pytest
+        type: pytest
+        cwd: backend
+        required: true
+        timeout_s: 300
+      - name: backend_import
+        type: python_import
+        cwd: backend
+        module: app.main
+        required: true
+        timeout_s: 60
+      - name: frontend_build
+        type: npm_build
+        cwd: frontend
+        required: false
+        timeout_s: 600
+
+  - id: expense_tracker
+    agent: fullstack
+    timeout_s: 2400
+    prompt: |
+      Build a tiny "Expenses" tracker. A user can register, log in, then create / list /
+      delete their own expenses. Each Expense has: amount (float), category (string),
+      note (string, optional), spent_on (date). One /expenses page with an inline
+      create form and a per-row delete button. Show the running total of the filtered
+      list at the top. Keep it minimal.
+    expect_files:
+      - docker-compose.yml
+      - backend/app/main.py
+      - backend/app/models.py
+      - "backend/app/routers/expense*.py"
+      - "backend/alembic/versions/*.py"
+      - frontend/src/pages/ExpensesPage.tsx
+    functional:
+      - name: backend_pytest
+        type: pytest
+        cwd: backend
+        required: true
+        timeout_s: 300
+      - name: backend_import
+        type: python_import
+        cwd: backend
+        module: app.main
+        required: true
+        timeout_s: 60
+      - name: frontend_build
+        type: npm_build
+        cwd: frontend
+        required: false
+        timeout_s: 600
+
+  - id: contacts_app
+    agent: fullstack
+    timeout_s: 2400
+    prompt: |
+      Build a tiny "Contacts" app. A user can register, log in, then create / list /
+      edit / delete their own contacts. Each Contact has: name (string), email
+      (string, optional), phone (string, optional), notes (string, optional). One
+      /contacts page that lists contacts with an inline create form and per-row
+      edit + delete actions.
+    expect_files:
+      - docker-compose.yml
+      - backend/app/main.py
+      - backend/app/models.py
+      - "backend/app/routers/contact*.py"
+      - "backend/alembic/versions/*.py"
+      - frontend/src/pages/ContactsPage.tsx
+    functional:
+      - name: backend_pytest
+        type: pytest
+        cwd: backend
+        required: true
+        timeout_s: 300
+      - name: backend_import
+        type: python_import
+        cwd: backend
+        module: app.main
+        required: true
+        timeout_s: 60
+      - name: frontend_build
+        type: npm_build
+        cwd: frontend
+        required: false
+        timeout_s: 600

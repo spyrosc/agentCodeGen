@@ -1,0 +1,18 @@
+# Runtime dependencies. Pin loosely; CI verifies compatibility.
+
+# Core orchestration
+langgraph==0.2.60
+langchain-core>=0.3,<0.4
+
+# LLM provider wheels (each is optional at runtime; loaded on demand)
+langchain-openai==0.3.8
+langchain-ollama==0.2.3
+langchain-google-genai==2.0.11
+langchain-aws==0.2.15
+langchain-anthropic==0.3.22
+
+# UI + utilities
+streamlit==1.32.1
+python-dotenv>=1.0
+pydantic>=2.5
+PyYAML>=6.0

@@ -1,0 +1,90 @@
+# GenAI Agent Platform — local development stack.
+#
+# Two containers:
+#   * agent    — Streamlit UI + LangGraph agents (port 8506)
+#   * sandbox  — isolated execution environment for generated code
+#
+# Both bind-mount the SAME host directory so file paths agree on both sides.
+# The sandbox is intentionally NOT on the `agents` network — generated code
+# cannot reach back into the platform.
+
+services:
+
+  sandbox:
+    container_name: ${SANDBOX_CONTAINER:-genai-sandbox}
+    build:
+      context: .
+      dockerfile: docker/sandbox.Dockerfile
+    image: genai/sandbox:latest
+    volumes:
+      - ${WORKSPACE_HOST_DIR:-./workspaces}:/workspaces
+      # SECURITY: required so the fullstack agent can run `docker compose up`
+      # for the generated project from inside the sandbox (docker-out-of-
+      # docker via the host daemon). Local development only.
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: unless-stopped
+    # No ports. No `agents` network membership. Sandbox sits on the default
+    # bridge so `pip install` works but the application network is unreachable.
+
+  agent:
+    container_name: genai-agent
+    build:
+      context: .
+      dockerfile: docker/agent.Dockerfile
+    image: genai/agent:latest
+    environment:
+      - LLM=${LLM:-llama2}
+      - LLM_TEMPERATURE=${LLM_TEMPERATURE:-0.0}
+      - LLM_TIMEOUT_S=${LLM_TIMEOUT_S:-600}
+      - LLM_MAX_RETRIES=${LLM_MAX_RETRIES:-2}
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      - OPENAI_API_KEY=${OPENAI_API_KEY-}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY-}
+      - ANTHROPIC_MAX_TOKENS=${ANTHROPIC_MAX_TOKENS:-8192}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID-}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY-}
+      - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION-us-east-1}
+      - WORKSPACE_ROOT=/workspaces
+      - SANDBOX_CONTAINER=${SANDBOX_CONTAINER:-genai-sandbox}
+      - SANDBOX_TIMEOUT_S=${SANDBOX_TIMEOUT_S:-180}
+      - SANDBOX_MAX_FILE_BYTES=${SANDBOX_MAX_FILE_BYTES:-64000}
+      - SANDBOX_MAX_OUTPUT_CHARS=${SANDBOX_MAX_OUTPUT_CHARS:-8000}
+      - AGENT_MAX_ITERATIONS=${AGENT_MAX_ITERATIONS:-40}
+      - FULLSTACK_POSTGRES_IMAGE=${FULLSTACK_POSTGRES_IMAGE:-postgres:16-alpine}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - LANGCHAIN_TRACING_V2=${LANGCHAIN_TRACING_V2:-false}
+      - LANGCHAIN_ENDPOINT=${LANGCHAIN_ENDPOINT-https://api.smith.langchain.com}
+      - LANGCHAIN_PROJECT=${LANGCHAIN_PROJECT-}
+      - LANGCHAIN_API_KEY=${LANGCHAIN_API_KEY-}
+      # Self-reflection (reflect agent) configuration. Defaults are
+      # safe-by-default: lessons disabled, no eval gate.
+      - REFLECT_REPO_MOUNT=${REFLECT_REPO_MOUNT:-/repo}
+      - REFLECT_LESSONS_ENABLED=${REFLECT_LESSONS_ENABLED:-true}
+      - REFLECT_LESSONS_AUTOSEED=${REFLECT_LESSONS_AUTOSEED:-true}
+      - REFLECT_EVAL_GATE_REQUIRED=${REFLECT_EVAL_GATE_REQUIRED:-false}
+    volumes:
+      - ${WORKSPACE_HOST_DIR:-./workspaces}:/workspaces
+      # SECURITY: required for `docker exec` into the sandbox. Local dev only.
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Read-only mount of the platform's own source for the reflect agent.
+      # `prepare_clone` copies / git-worktrees this into a workspace before
+      # any modification — the live tree is never written.
+      - ${REPO_HOST_DIR:-.}:/repo:ro
+    ports:
+      - "8506:8506"
+    depends_on:
+      sandbox:
+        condition: service_started
+    # networks:
+    #   - agents
+    network_mode: host
+    healthcheck:
+      test: ["CMD-SHELL", "curl --fail http://localhost:8506/_stcore/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  agents:
+    name: genai-agents
